@@ -1,0 +1,38 @@
+# =========================
+# GENERAL
+# =========================
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE FILES
+# =========================
+.vscode/
+.idea/
+*.iml
+
+# =========================
+# BACKEND (Spring Boot / Java)
+# =========================
+backend/HELP.md
+backend/target/
+backend/*.log
+backend/*.class
+
+# Maven Wrapper (optional keep/remove)
+# backend/.mvn/
+
+# =========================
+# FRONTEND (React / Node)
+# =========================
+frontend/node_modules/
+frontend/build/
+frontend/.env
+
+# =========================
+# OS FILES
+# =========================
+Desktop.ini
