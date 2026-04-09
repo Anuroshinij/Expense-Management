@@ -18,6 +18,7 @@ Thumbs.db
 # BACKEND (Spring Boot / Java)
 # =========================
 backend/HELP.md
+backend/.env
 backend/target/
 backend/*.log
 backend/*.class
