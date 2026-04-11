@@ -13,6 +13,7 @@ import com.example.backend.exception.CustomException;
 import com.example.backend.model.Role;
 import com.example.backend.model.User;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.security.JwtUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +23,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     private static final String ADMIN_SECRET = "SECRET123";
 
@@ -67,9 +69,16 @@ public class UserService {
             throw new CustomException("Invalid password");
         }
 
+        //generate token
+
+        String token = jwtUtil.generateToken(
+            user.getEmail(),
+            user.getRole().name()
+        );
+
         return AuthResponse.builder()
                 .message("Login successful")
-                .token("TEMP_TOKEN")
+                .token(token)
                 .role(user.getRole().name())
                 .build();
     }
