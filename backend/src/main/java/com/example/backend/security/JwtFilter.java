@@ -2,6 +2,8 @@ package com.example.backend.security;
 
 import java.io.IOException;
 
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final CustomUserDetailsService userDetailsService;
     
     @Override
     protected void doFilterInternal(HttpServletRequest request, 
@@ -39,7 +42,15 @@ public class JwtFilter extends OncePerRequestFilter {
                     if(jwtUtil.validateToken(token)) {
                         String email = jwtUtil.extractEmail(token);
 
-                        request.setAttribute("email", email);
+                        var userDetails = userDetailsService.loadUserByUsername(email);
+
+                        var authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails,
+                            null,
+                            userDetails.getAuthorities()
+                        );
+
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
                     }
                 }
 
