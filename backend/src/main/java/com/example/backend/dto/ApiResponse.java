@@ -5,9 +5,10 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ApiResponse {
+public class ApiResponse<T> {
 
     private String message;
-    private Object data;
+    private T data;
+    private boolean success;
 
 }
