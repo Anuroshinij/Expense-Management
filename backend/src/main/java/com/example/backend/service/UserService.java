@@ -27,7 +27,7 @@ public class UserService {
 
     private static final String ADMIN_SECRET = "SECRET123";
 
-    public ApiResponse register(RegisterRequest request) {
+    public ApiResponse<Void> register(RegisterRequest request) {
 
         if(!request.getPassword().equals(request.getConfirmPassword())) {
             throw new CustomException("Passwords do not match");
@@ -54,32 +54,39 @@ public class UserService {
 
         userRepository.save(user);
 
-        return ApiResponse.builder()
+        return ApiResponse.<Void>builder()
                 .message("User registered successfully")
                 .data(null)
+                .success(true)
                 .build();
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public ApiResponse<AuthResponse> login(LoginRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
-                        .orElseThrow(() -> new CustomException("User not found"));
+                .orElseThrow(() -> new CustomException("Invalid email or password"));
 
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new CustomException("Invalid password");
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new CustomException("Invalid email or password");
         }
 
-        //generate token
+        String role = user.getRole().name();
 
         String token = jwtUtil.generateToken(
-            user.getEmail(),
-            user.getRole().name()
+                user.getEmail(),
+                role
         );
 
-        return AuthResponse.builder()
+        AuthResponse authResponse = AuthResponse.builder()
                 .message("Login successful")
                 .token(token)
-                .role(user.getRole().name())
+                .role(role)
+                .build();
+
+        return ApiResponse.<AuthResponse>builder()
+                .message("Login successful")
+                .data(authResponse)
+                .success(true)
                 .build();
     }
 

@@ -19,43 +19,47 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService userDetailsService;
-    
+
     @Override
-    protected void doFilterInternal(HttpServletRequest request, 
-                                    HttpServletResponse response, 
-                                    FilterChain filterChain)
-            throws ServletException, IOException {
-        
-                String path = request.getServletPath();
+    protected boolean shouldNotFilter(HttpServletRequest request) {
 
-                if(path.startsWith("/api/auth")) {
-                    filterChain.doFilter(request, response);
-                    return;
-                }
-        
-                String header = request.getHeader("Authorization");
+        String path = request.getServletPath();
 
-                if(header != null && header.startsWith("Bearer ")) {
-
-                    String token = header.substring(7);
-
-                    if(jwtUtil.validateToken(token)) {
-                        String email = jwtUtil.extractEmail(token);
-
-                        var userDetails = userDetailsService.loadUserByUsername(email);
-
-                        var authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
-                        );
-
-                        SecurityContextHolder.getContext().setAuthentication(authToken);
-                    }
-                }
-
-                filterChain.doFilter(request, response);
-        
+        return path.startsWith("/api/auth") ||
+               path.startsWith("/swagger-ui") ||
+               path.startsWith("/v3/api-docs") ||
+               path.equals("/swagger-ui.html") ||
+               path.startsWith("/error");
     }
 
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
+
+        String header = request.getHeader("Authorization");
+
+        if (header != null && header.startsWith("Bearer ")) {
+
+            String token = header.substring(7);
+
+            if (jwtUtil.validateToken(token)) {
+
+                String email = jwtUtil.extractEmail(token);
+
+                var userDetails = userDetailsService.loadUserByUsername(email);
+
+                var authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
+
+        filterChain.doFilter(request, response);
+    }
 }

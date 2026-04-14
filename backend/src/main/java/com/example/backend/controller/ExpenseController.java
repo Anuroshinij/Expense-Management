@@ -23,8 +23,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-
-
 @RestController
 @RequestMapping("/api/expenses")
 @RequiredArgsConstructor
@@ -33,28 +31,36 @@ public class ExpenseController {
     private final ExpenseService expenseService;
 
     @PostMapping
-    public ResponseEntity<ApiResponse> addExpense(@Valid @RequestBody ExpenseRequest request) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                        .body(expenseService.addExpense(request));
+    public ResponseEntity<ApiResponse<Void>> addExpense(
+            @Valid @RequestBody ExpenseRequest request) {
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(expenseService.addExpense(request));
     }
 
     @GetMapping
-    public ResponseEntity<ExpenseResponse> getByDate(@RequestParam LocalDate date) {
-        return ResponseEntity.ok(expenseService.getExpenseByDate(date));
+    public ResponseEntity<ApiResponse<ExpenseResponse>> getByDate(
+            @RequestParam LocalDate date) {
+
+        return ResponseEntity.ok(
+                expenseService.getExpenseByDate(date));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse> updateExpense(
-                        @PathVariable Long id, 
-                        @Valid @RequestBody ExpenseRequest request) {
-        
-        return ResponseEntity.ok(expenseService.updateExpense(id, request));
+    public ResponseEntity<ApiResponse<Void>> updateExpense(
+            @PathVariable Long id,
+            @Valid @RequestBody ExpenseRequest request) {
+
+        return ResponseEntity.ok(
+                expenseService.updateExpense(id, request));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse> deleteExpense(@PathVariable Long id) {
-            
-        return ResponseEntity.ok(expenseService.deleteExpense(id));
-    } 
+    public ResponseEntity<ApiResponse<Void>> deleteExpense(
+            @PathVariable Long id) {
 
+        return ResponseEntity.ok(
+                expenseService.deleteExpense(id));
+    }
 }

@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import com.example.backend.dto.ApiResponse;
@@ -18,6 +17,7 @@ import com.example.backend.model.Expense;
 import com.example.backend.model.User;
 import com.example.backend.repository.ExpenseRepository;
 import com.example.backend.repository.UserRepository;
+import com.example.backend.security.SecurityUtil;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,12 +28,15 @@ public class ExpenseService {
     private final ExpenseRepository expenseRepository;
     private final UserRepository userRepository;
 
-    public ApiResponse addExpense(ExpenseRequest request) {
+    private User getCurrentUser() {
+        String email = SecurityUtil.getCurrentUserEmail();
+        return userRepository.findByEmail(email)
+            .orElseThrow(() -> new CustomException("User not found"));
+    }
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+    public ApiResponse<Void> addExpense(ExpenseRequest request) {
 
-        User user = userRepository.findByEmail(email)
-                        .orElseThrow(() -> new CustomException("User not found"));
+        User user = getCurrentUser();
 
         Expense expense = Expense.builder()
                                 .date(request.getDate())
@@ -46,19 +49,17 @@ public class ExpenseService {
 
         expenseRepository.save(expense);
 
-        return ApiResponse.builder()
+        return ApiResponse.<Void>builder()
                         .message("Expense added successfully")
                         .data(null)
+                        .success(true)
                         .build();
         
     }
 
-    public ExpenseResponse getExpenseByDate(LocalDate date) {
+    public ApiResponse<ExpenseResponse> getExpenseByDate(LocalDate date) {
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        User user = userRepository.findByEmail(email)
-                                .orElseThrow(() -> new CustomException("User not found"));
+        User user = getCurrentUser();
 
         List<Expense> expenses = expenseRepository.findByUserAndDate(user, date);
 
@@ -77,26 +78,29 @@ public class ExpenseService {
                                                                                         Collectors.toList())
                                                     ));
         
-        return ExpenseResponse.builder()
-                            .date(date)
-                            .total(total)
-                            .categories(grouped)
+        ExpenseResponse response = ExpenseResponse.builder()
+                                        .date(date)
+                                        .total(total)
+                                        .categories(grouped)
+                                        .build();
+
+        return ApiResponse.<ExpenseResponse>builder()
+                            .message("Expenses retrieved successfully")
+                            .data(response)
+                            .success(true)
                             .build();
 
     }
 
-    public ApiResponse updateExpense(Long id, ExpenseRequest request) {
+    public ApiResponse<Void> updateExpense(Long id, ExpenseRequest request) {
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        User user = userRepository.findByEmail(email)
-                                .orElseThrow(() -> new CustomException("User not found"));
+        User user = getCurrentUser();
 
         Expense expense = expenseRepository.findById(id)
                                         .orElseThrow(() -> new CustomException("Expense not found"));
 
         if(!expense.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized access");
+            throw new CustomException("Unauthorized access");
         }
 
         expense.setCategory(request.getCategory());
@@ -106,33 +110,32 @@ public class ExpenseService {
 
         expenseRepository.save(expense);
 
-        return ApiResponse.builder()
+        return ApiResponse.<Void>builder()
                         .message("Expense updated successfully")
                         .data(null)
+                        .success(true)
                         .build();
 
     }
 
 
-    public ApiResponse deleteExpense(Long id) {
+    public ApiResponse<Void> deleteExpense(Long id) {
 
-        String email = SecurityContextHolder.getContext().getAuthentication().getName();
-
-        User user = userRepository.findByEmail(email)
-                                .orElseThrow(() -> new CustomException("User not found"));
+        User user = getCurrentUser();
 
         Expense expense = expenseRepository.findById(id)
-                                        .orElseThrow(() -> new CustomException("Exception not found"));
+                                        .orElseThrow(() -> new CustomException("Expense not found"));
 
         if(!expense.getUser().getId().equals(user.getId())) {
-            throw new RuntimeException("Unauthorized access");        
+            throw new CustomException("Unauthorized access");        
         }
 
         expenseRepository.delete(expense);
 
-        return ApiResponse.builder()
+        return ApiResponse.<Void>builder()
                         .message("Expense deleted successfully")
                         .data(null)
+                        .success(true)
                         .build();
         
     }
