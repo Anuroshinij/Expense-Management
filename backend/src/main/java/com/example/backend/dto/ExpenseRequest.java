@@ -14,7 +14,7 @@ public class ExpenseRequest {
     private LocalDate date;
 
     @NotBlank(message = "Category is required")
-    private String category;
+    private Long categoryId;
 
     @NotNull(message = "Amount is required")
     @Positive(message = "Amont must be greater than zero")
