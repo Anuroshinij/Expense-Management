@@ -1,7 +1,6 @@
 package com.example.backend.model;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import org.springframework.lang.NonNull;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -17,30 +16,22 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "expenses")
+@Table(name = "categories")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Expense {
+public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDate date;
+    @NonNull
+    private String name;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
-
-    private Double amount;
-
-    private String description;
-    
-    private LocalDateTime createdAt;
-
+    @NonNull
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
