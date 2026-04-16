@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.example.backend.dto.ApiResponse;
 import com.example.backend.dto.CategoryRequest;
-import com.example.backend.model.Category;
+import com.example.backend.dto.CategoryResponse;
 import com.example.backend.service.CategoryService;
 
 import jakarta.validation.Valid;
@@ -30,12 +30,7 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<Category>>> getAll() {
-        return ResponseEntity.ok(
-                ApiResponse.<List<Category>>builder()
-                        .success(true)
-                        .message("Categories fetched")
-                        .data(categoryService.getCategories())
-                        .build());
+    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll() {
+        return ResponseEntity.ok(categoryService.getCategories());
     }
 }
