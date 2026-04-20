@@ -42,7 +42,7 @@ public class ExpenseService {
 
         User user = getCurrentUser();
 
-        Category category = categoryRepository.findById(request.getCategoryId())
+        Category category = categoryRepository.findByIdAndUser(request.getCategoryId(), user)
                 .orElseThrow(() -> new CustomException("Category not found"));
 
         Expense expense = Expense.builder()
