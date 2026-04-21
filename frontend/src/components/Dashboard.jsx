@@ -1,198 +1,251 @@
 import React, { useEffect, useState, useCallback } from "react";
-import API from "../services/api";
-import ExpenseForm from "./ExpenseForm";
-import ExpenseList from "./ExpenseList";
-import CalendarView from "./CalendarView";
+import {
+  fetchCategories,
+  fetchExpenses,
+  addExpense,
+  updateExpense,
+  deleteExpense,
+} from "../services/api";
+
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
+import CalendarView from "../components/CalendarView";
+import ExpenseCard from "../components/ExpenseCard";
+import ExpenseSidebar from "../components/ExpenseSidebar";
+import CategoryChips from "../components/CategoryChips";
+import CategoryModal from "../components/CategoryModal";
 
 const Dashboard = () => {
   const [date, setDate] = useState(new Date());
   const [data, setData] = useState(null);
   const [categories, setCategories] = useState([]);
   const [selectedExpense, setSelectedExpense] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  // 🔹 Category creation state
-  const [showCategoryInput, setShowCategoryInput] = useState(false);
-  const [newCategory, setNewCategory] = useState("");
+  const [openSidebar, setOpenSidebar] = useState(false);
+  const [openCategoryModal, setOpenCategoryModal] = useState(false);
 
   const formatDate = (d) => {
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-  // ==========================
-  // 🔹 FETCH CATEGORIES
-  // ==========================
-  const fetchCategories = async () => {
-    try {
-      const res = await API.get("/categories");
-      setCategories(res.data.data);
-    } catch (err) {
-      console.error("Category fetch failed", err);
-    }
+    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+    return local.toISOString().split("T")[0];
   };
 
-  // ==========================
-  // 🔹 FETCH EXPENSES
-  // ==========================
-  const fetchExpenses = useCallback(async () => {
+  const loadCategories = useCallback(async () => {
     try {
-      setLoading(true);
-      const res = await API.get(`/expenses?date=${formatDate(date)}`);
+      const res = await fetchCategories();
+      setCategories(res.data.data);
+    } catch {
+      console.error("Category fetch failed");
+    }
+  }, []);
+
+  const loadExpenses = useCallback(async () => {
+    try {
+      const res = await fetchExpenses(formatDate(date));
       setData(res.data.data);
-    } catch (err) {
-      console.error("Expense fetch failed", err);
-    } finally {
-      setLoading(false);
+    } catch {
+      console.error("Expense fetch failed");
+      setData(null);
     }
   }, [date]);
 
   useEffect(() => {
-    fetchCategories();
-  }, []);
+    loadCategories();
+  }, [loadCategories]);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    loadExpenses();
+  }, [loadExpenses]);
 
-  // ==========================
-  // 🔹 CREATE CATEGORY
-  // ==========================
-  const handleCreateCategory = async () => {
-    if (!newCategory.trim()) return;
-
-    try {
-      await API.post("/categories", { name: newCategory });
-      setNewCategory("");
-      setShowCategoryInput(false);
-      fetchCategories();
-    } catch (err) {
-      alert(err.response?.data?.message || "Error creating category");
-    }
-  };
-
-  // ==========================
-  // 🔹 SAVE (ADD / UPDATE)
-  // ==========================
+  // ✅ SAVE
   const handleSave = async (form) => {
     try {
+      const payload = {
+        date: formatDate(date),
+        categoryId: Number(form.categoryId),
+        amount: Number(form.amount),
+        description: form.description,
+      };
+
       if (selectedExpense) {
-        await API.put(`/expenses/${selectedExpense.id}`, {
-          date: formatDate(date),
-          ...form,
-        });
+        await updateExpense(selectedExpense.id, payload);
       } else {
-        await API.post("/expenses", {
-          date: formatDate(date),
-          ...form,
-        });
+        await addExpense(payload);
       }
 
+      setOpenSidebar(false);
       setSelectedExpense(null);
-      fetchExpenses();
+      loadExpenses();
+
+      // 🔥 scroll to top
+      document.getElementById("expenseTop")?.scrollIntoView({
+        behavior: "smooth",
+      });
+
     } catch (err) {
-      alert(err.response?.data?.message || "Error saving expense");
+      alert(err.response?.data?.message || "Save failed");
     }
   };
 
-  // ==========================
-  // 🔹 DELETE
-  // ==========================
+  // ✅ EDIT
+  const handleEdit = (item, categoryName) => {
+    const cat = categories.find((c) => c.name === categoryName);
+
+    setSelectedExpense({
+      ...item,
+      categoryId: cat?.id,
+    });
+
+    setOpenSidebar(true);
+  };
+
+  // ✅ DELETE
   const handleDelete = async (id) => {
     try {
-      await API.delete(`/expenses/${id}`);
-      fetchExpenses();
-    } catch (err) {
+      await deleteExpense(id);
+      loadExpenses();
+    } catch {
       alert("Delete failed");
     }
   };
 
-  // ==========================
-  // 🔹 EDIT (PREFILL)
-  // ==========================
-  const handleEdit = (item, categoryName) => {
-    const category = categories.find((c) => c.name === categoryName);
-
-    setSelectedExpense({
-      ...item,
-      categoryId: category?.id,
-    });
-  };
-
   return (
-    <div style={{ display: "flex", padding: "20px" }}>
-      {/* 📅 LEFT SIDE - CALENDAR */}
-      <CalendarView date={date} setDate={setDate} />
+    <div style={{ display: "flex", height: "100vh" }}>
+      <Sidebar />
 
-      {/* 📊 RIGHT SIDE */}
-      <div style={{ marginLeft: "20px", flex: 1 }}>
-        <h2>Expenses - {formatDate(date)}</h2>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <Navbar />
 
-        {/* ==========================
-            ➕ CATEGORY SECTION
-        ========================== */}
-        <div style={{ marginBottom: "15px" }}>
-          <button onClick={() => setShowCategoryInput(!showCategoryInput)}>
-            + Create Category
-          </button>
+        {/* 🔥 MAIN SPLIT LAYOUT */}
+        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
-          {showCategoryInput && (
-            <div style={{ marginTop: "10px" }}>
-              <input
-                placeholder="Category name"
-                value={newCategory}
-                onChange={(e) => setNewCategory(e.target.value)}
-              />
-              <button onClick={handleCreateCategory}>Save</button>
+          {/* LEFT PANEL */}
+          <div style={leftPanel}>
+            <div style={cardStyle}>
+              <h3>Select Date</h3>
+              <CalendarView date={date} setDate={setDate} />
             </div>
-          )}
-        </div>
 
-        <div style={{ marginBottom: "15px" }}>
-          <h4>Available Categories</h4>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            {categories.map((c) => (
-              <span
-                key={c.id}
-                style={{
-                  padding: "5px 10px",
-                  background: "#eee",
-                  borderRadius: "10px",
-                }}
-              >
-                {c.name}
-              </span>
-            ))}
+            <div style={totalCard}>
+              💰 Total: ₹{data?.total || 0}
+            </div>
+
+            <button
+              style={categoryBtn}
+              onClick={() => setOpenCategoryModal(true)}
+            >
+              + Create Category
+            </button>
+
+            <CategoryChips categories={categories} />
+          </div>
+
+          {/* RIGHT PANEL */}
+          <div style={rightPanel} id="expenseTop">
+
+            {!data?.categories || Object.keys(data.categories).length === 0 ? (
+              <div style={emptyState}>No expenses 😴</div>
+            ) : (
+              Object.entries(data.categories)
+                .reverse() // 🔥 latest category first
+                .map(([category, items]) => (
+                  <ExpenseCard
+                    key={category}
+                    category={category}
+                    items={[...items].reverse()} // 🔥 latest item first
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
+                ))
+            )}
           </div>
         </div>
 
-        {/* ==========================
-            ➕ EXPENSE FORM
-        ========================== */}
-        <ExpenseForm
-          selectedExpense={selectedExpense}
-          categories={categories}
-          selectedDate={date}
-          onSave={handleSave}
-        />
-
-        {/* ==========================
-            📊 EXPENSE LIST
-        ========================== */}
-        {loading ? (
-          <p>Loading...</p>
-        ) : (
-          <ExpenseList
-            data={data}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        )}
+        {/* 🔥 FLOATING BUTTON */}
+        <button style={fabBtn} onClick={() => setOpenSidebar(true)}>
+          +
+        </button>
       </div>
+
+      <ExpenseSidebar
+        open={openSidebar}
+        onClose={() => setOpenSidebar(false)}
+        onSave={handleSave}
+        selectedExpense={selectedExpense}
+        categories={categories}
+      />
+
+      <CategoryModal
+        open={openCategoryModal}
+        onClose={() => setOpenCategoryModal(false)}
+        onSuccess={loadCategories}
+      />
     </div>
   );
 };
 
 export default Dashboard;
+
+/* ---------- STYLES ---------- */
+
+const leftPanel = {
+  flex: 6,
+  padding: "20px",
+  background: "#fff",
+  borderRadius: "12px",
+};
+
+const rightPanel = {
+  flex: 4,
+  padding: "20px",
+  overflowY: "auto",
+  background: "#fff",
+  borderRadius: "12px",
+};
+
+const fabBtn = {
+  position: "fixed",
+  bottom: "30px",
+  right: "40px",
+  width: "60px",
+  height: "60px",
+  borderRadius: "50%",
+  background: "#ff5a5f",
+  color: "#fff",
+  fontSize: "28px",
+  border: "none",
+  cursor: "pointer",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
+};
+
+const cardStyle = {
+  background: "#fff",
+  padding: "15px",
+  borderRadius: "12px",
+  marginBottom: "15px",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+};
+
+const totalCard = {
+  padding: "12px",
+  background: "#fff",
+  borderRadius: "10px",
+  marginBottom: "10px",
+  fontWeight: "bold",
+};
+
+const emptyState = {
+  textAlign: "center",
+  padding: "20px",
+  background: "#fff",
+  borderRadius: "10px",
+  color: "#888",
+};
+
+const categoryBtn = {
+  padding: "8px 14px",
+  background: "#4caf50",
+  color: "#fff",
+  border: "none",
+  borderRadius: "6px",
+  cursor: "pointer",
+  marginBottom: "10px",
+};
