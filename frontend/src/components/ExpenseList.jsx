@@ -28,7 +28,11 @@ const ExpenseList = ({ data, onEdit, onDelete }) => {
                   <button onClick={() => onEdit(item, category)}>
                     Edit
                   </button>
-                  <button onClick={() => onDelete(item.id)}>
+                  <button onClick={() => {
+                    if(window.confirm("Are you sure you want to delete this expense?")) {
+                      onDelete(item.id);
+                    }
+                    }}>
                     Delete
                   </button>
                 </div>
