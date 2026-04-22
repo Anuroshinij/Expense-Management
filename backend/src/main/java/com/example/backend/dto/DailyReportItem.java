@@ -1,7 +1,6 @@
 package com.example.backend.dto;
 
 import java.time.LocalDate;
-
 import lombok.Builder;
 import lombok.Data;
 
@@ -10,5 +9,4 @@ import lombok.Data;
 public class DailyReportItem {
     private LocalDate date;
     private Double total;
-
 }
