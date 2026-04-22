@@ -8,5 +8,4 @@ import lombok.Data;
 public class CategoryReportItem {
     private String category;
     private Double total;
-
 }
