@@ -8,7 +8,6 @@ import {
 } from "../services/api";
 
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
 import CalendarView from "../components/CalendarView";
 import ExpenseCard from "../components/ExpenseCard";
 import ExpenseSidebar from "../components/ExpenseSidebar";
@@ -55,7 +54,6 @@ const Dashboard = () => {
     loadExpenses();
   }, [loadExpenses]);
 
-  // ✅ SAVE
   const handleSave = async (form) => {
     try {
       const payload = {
@@ -75,17 +73,14 @@ const Dashboard = () => {
       setSelectedExpense(null);
       loadExpenses();
 
-      // 🔥 scroll to top
       document.getElementById("expenseTop")?.scrollIntoView({
         behavior: "smooth",
       });
-
     } catch (err) {
       alert(err.response?.data?.message || "Save failed");
     }
   };
 
-  // ✅ EDIT
   const handleEdit = (item, categoryName) => {
     const cat = categories.find((c) => c.name === categoryName);
 
@@ -97,7 +92,6 @@ const Dashboard = () => {
     setOpenSidebar(true);
   };
 
-  // ✅ DELETE
   const handleDelete = async (id) => {
     try {
       await deleteExpense(id);
@@ -108,58 +102,73 @@ const Dashboard = () => {
   };
 
   return (
-    <div style={{ display: "flex", height: "100vh" }}>
+    <div style={app}>
       <Sidebar />
 
-      <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-        <Navbar />
+      <div style={main}>
+        {/* HEADER */}
+        <div style={header}>
+          <h2 style={{ margin: 0 }}>📅 Dashboard</h2>
+          <span style={dateText}>{date.toDateString()}</span>
+        </div>
 
-        {/* 🔥 MAIN SPLIT LAYOUT */}
-        <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-
-          {/* LEFT PANEL */}
-          <div style={leftPanel}>
-            <div style={cardStyle}>
-              <h3>Select Date</h3>
+        {/* GRID */}
+        <div style={grid}>
+          {/* LEFT */}
+          <div style={leftCol}>
+            <div style={card}>
+              <h4 style={title}>📆 Select Date</h4>
               <CalendarView date={date} setDate={setDate} />
             </div>
 
             <div style={totalCard}>
-              💰 Total: ₹{data?.total || 0}
+              <span>💰 Daily Spend</span>
+              <strong>₹{data?.total || 0}</strong>
             </div>
 
-            <button
-              style={categoryBtn}
-              onClick={() => setOpenCategoryModal(true)}
-            >
-              + Create Category
-            </button>
+            <div style={card}>
+              <div style={rowBetween}>
+                <h4 style={title}>📂 Categories</h4>
+                <button
+                  style={categoryBtn}
+                  onClick={() => setOpenCategoryModal(true)}
+                >
+                  + Add
+                </button>
+              </div>
 
-            <CategoryChips categories={categories} />
+              <CategoryChips categories={categories} />
+            </div>
           </div>
 
-          {/* RIGHT PANEL */}
-          <div style={rightPanel} id="expenseTop">
+          {/* RIGHT */}
+          <div style={rightCol} id="expenseTop">
+            <div style={cardFull}>
+              <h4 style={title}>💳 Expenses</h4>
 
-            {!data?.categories || Object.keys(data.categories).length === 0 ? (
-              <div style={emptyState}>No expenses 😴</div>
-            ) : (
-              Object.entries(data.categories)
-                .reverse() // 🔥 latest category first
-                .map(([category, items]) => (
-                  <ExpenseCard
-                    key={category}
-                    category={category}
-                    items={[...items].reverse()} // 🔥 latest item first
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                  />
-                ))
-            )}
+              <div style={expenseScroll}>
+                {!data?.categories ||
+                Object.keys(data.categories).length === 0 ? (
+                  <div style={emptyState}>No expenses 😴</div>
+                ) : (
+                  Object.entries(data.categories)
+                    .reverse()
+                    .map(([category, items]) => (
+                      <ExpenseCard
+                        key={category}
+                        category={category}
+                        items={[...items].reverse()}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                      />
+                    ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* 🔥 FLOATING BUTTON */}
+        {/* FAB */}
         <button style={fabBtn} onClick={() => setOpenSidebar(true)}>
           +
         </button>
@@ -186,66 +195,123 @@ export default Dashboard;
 
 /* ---------- STYLES ---------- */
 
-const leftPanel = {
-  flex: 6,
-  padding: "20px",
-  background: "#fff",
-  borderRadius: "12px",
+const app = {
+  display: "flex",
+  height: "100vh", // 🔥 fixed full height
+  overflow: "hidden",
+  background: "#f4f6fb",
 };
 
-const rightPanel = {
-  flex: 4,
-  padding: "20px",
-  overflowY: "auto",
-  background: "#fff",
-  borderRadius: "12px",
-};
-
-const fabBtn = {
-  position: "fixed",
-  bottom: "30px",
-  right: "40px",
-  width: "60px",
-  height: "60px",
-  borderRadius: "50%",
-  background: "#ff5a5f",
-  color: "#fff",
-  fontSize: "28px",
-  border: "none",
-  cursor: "pointer",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-};
-
-const cardStyle = {
-  background: "#fff",
+const main = {
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
   padding: "15px",
+  gap: "10px",
+};
+
+const header = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  paddingBottom: "5px",
+};
+
+const dateText = {
+  fontSize: "13px",
+  color: "#666",
+};
+
+const grid = {
+  display: "grid",
+  gridTemplateColumns: "1.2fr 1fr",
+  gap: "12px",
+  flex: 1,
+  overflow: "hidden",
+};
+
+const leftCol = {
+  display: "flex",
+  flexDirection: "column",
+  gap: "12px",
+};
+
+const rightCol = {
+  display: "flex",
+  flexDirection: "column",
+};
+
+const card = {
+  background: "#fff",
+  padding: "12px",
   borderRadius: "12px",
-  marginBottom: "15px",
-  boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+};
+
+const cardFull = {
+  ...card,
+  flex: 1,
+  display: "flex",
+  flexDirection: "column",
+};
+
+const expenseScroll = {
+  overflowY: "auto",
+  marginTop: "8px",
+  paddingRight: "5px",
 };
 
 const totalCard = {
-  padding: "12px",
-  background: "#fff",
-  borderRadius: "10px",
-  marginBottom: "10px",
-  fontWeight: "bold",
+  background: "linear-gradient(135deg,#ff5a5f,#ff9966)",
+  color: "#fff",
+  padding: "14px",
+  borderRadius: "12px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  fontSize: "14px",
 };
 
-const emptyState = {
-  textAlign: "center",
-  padding: "20px",
-  background: "#fff",
-  borderRadius: "10px",
-  color: "#888",
+const rowBetween = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: "6px",
+};
+
+const title = {
+  margin: 0,
+  fontSize: "15px",
 };
 
 const categoryBtn = {
-  padding: "8px 14px",
+  padding: "4px 10px",
+  fontSize: "12px",
   background: "#4caf50",
   color: "#fff",
   border: "none",
   borderRadius: "6px",
   cursor: "pointer",
-  marginBottom: "10px",
+};
+
+const emptyState = {
+  textAlign: "center",
+  padding: "15px",
+  fontSize: "13px",
+  color: "#999",
+};
+
+const fabBtn = {
+  position: "fixed",
+  bottom: "20px",
+  right: "25px",
+  width: "55px",
+  height: "55px",
+  borderRadius: "50%",
+  background: "linear-gradient(135deg,#ff5a5f,#ff9966)",
+  color: "#fff",
+  fontSize: "26px",
+  border: "none",
+  cursor: "pointer",
+  boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
 };

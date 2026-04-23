@@ -4,16 +4,57 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import DashboardPage from "./pages/Dashboard";
 import Reports from "./pages/Reports";
+import ProtectedRoute from "./components/ProtectedRoute";
+import Analytics from "./pages/Analytics";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path = "/" element = {<Home /> } />
-        <Route path = "/auth" element = {<Login /> } />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/reports" element={<Reports />} />
+        {/* Public */}
+        <Route path="/auth" element={<Login />} />
+
+        {/* User + Admin */}
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute allowedRoles={["USER", "ADMIN"]}>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute allowedRoles={["USER", "ADMIN"]}>
+              <Reports />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Only */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["ADMIN"]}>
+              <h2>Admin Panel</h2>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+
       </Routes>
+
     </BrowserRouter>
   );
 }
