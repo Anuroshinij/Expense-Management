@@ -4,7 +4,6 @@ import {
   getCategoryReport,
 } from "../services/reportApi";
 import Sidebar from "../components/Sidebar";
-import Navbar from "../components/Navbar";
 
 const Reports = () => {
   const today = new Date();
@@ -17,19 +16,31 @@ const Reports = () => {
   const [category, setCategory] = useState([]);
   const [total, setTotal] = useState(0);
 
-  const format = (d) => d.toISOString().split("T")[0];
+  // ✅ FIXED DATE FORMAT (NO UTC SHIFT)
+  const format = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
 
+  // ✅ MONTH RANGE (NO FUTURE DATES)
   const getMonthRange = () => {
     const start = new Date(year, month - 1, 1);
     const end = new Date(year, month, 0);
+
     const today = new Date();
     const safeEnd = end > today ? today : end;
+
     return { start, end: safeEnd };
   };
 
+  // ✅ FILL MISSING DAYS (NO FAKE DATA)
   const fillMissingDays = (data) => {
     const map = {};
-    data.forEach((d) => (map[d.date] = d.total));
+    data.forEach((d) => {
+      map[d.date] = d.total;
+    });
 
     const result = [];
     const { start, end } = getMonthRange();
@@ -37,7 +48,7 @@ const Reports = () => {
     let current = new Date(start);
 
     while (current <= end) {
-      const dateStr = current.toISOString().split("T")[0];
+      const dateStr = format(current);
 
       result.push({
         date: dateStr,
@@ -50,23 +61,27 @@ const Reports = () => {
     return result;
   };
 
+  // ✅ WEEK SPLIT (ONLY CURRENT MONTH, SUN END)
   const generateWeeks = (data) => {
     let weeks = [];
     let temp = [];
     let sum = 0;
 
     data.forEach((d, i) => {
-      const day = new Date(d.date).getDay();
+      const dateObj = new Date(d.date);
+      const day = dateObj.getDay(); // Sunday = 0
 
       temp.push(d);
       sum += d.total;
 
+      // ✅ END WEEK ON SUNDAY OR LAST DAY
       if (day === 0 || i === data.length - 1) {
         weeks.push({
           start: temp[0].date,
           end: temp[temp.length - 1].date,
           total: sum,
         });
+
         temp = [];
         sum = 0;
       }
@@ -75,6 +90,7 @@ const Reports = () => {
     return weeks;
   };
 
+  // ✅ LOAD DATA
   const loadReports = async () => {
     try {
       const { start, end } = getMonthRange();
@@ -112,12 +128,12 @@ const Reports = () => {
       <Sidebar />
 
       <div style={{ flex: 1 }}>
-        <Navbar />
+        
 
         <div style={{ padding: "25px" }}>
           {/* HEADER */}
           <div style={header}>
-            <h2>📊 Reports Dashboard</h2>
+            <h2 style={{ margin: 0 }}>📊 Reports Dashboard</h2>
 
             <div style={filterBox}>
               <select value={month} onChange={(e) => setMonth(Number(e.target.value))}>
@@ -136,15 +152,14 @@ const Reports = () => {
             </div>
           </div>
 
-          {/* TOTAL CARD */}
+          {/* TOTAL */}
           <div style={totalCard}>
-            💰 ₹{total}
+            <div>₹{total}</div>
             <span style={subText}>Monthly Spend</span>
           </div>
 
           {/* GRID */}
           <div style={grid}>
-            
             {/* WEEKLY */}
             <div style={card}>
               <h3>📊 Weekly</h3>
@@ -159,26 +174,30 @@ const Reports = () => {
             {/* CATEGORY */}
             <div style={card}>
               <h3>📂 Categories</h3>
-              {category.map((c, i) => (
-                <div key={i} style={row}>
-                  <span>{c.category}</span>
-                  <strong>₹{c.total}</strong>
-                </div>
-              ))}
+              {category.length === 0 ? (
+                <p>No data</p>
+              ) : (
+                category.map((c, i) => (
+                  <div key={i} style={row}>
+                    <span>{c.category}</span>
+                    <strong>₹{c.total}</strong>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
-          {/* DAILY GRID */}
+          {/* DAILY */}
           <div style={card}>
             <h3>📈 Daily</h3>
 
             <div style={dailyGrid}>
               {daily.map((d, i) => (
                 <div key={i} style={dayBox}>
-                  <span style={{ fontSize: "11px" }}>
+                  <span style={dateText}>
                     {d.date.split("-")[2]}
                   </span>
-                  <strong>₹{d.total}</strong>
+                  <strong style={amountText}>₹{d.total}</strong>
                 </div>
               ))}
             </div>
@@ -206,14 +225,15 @@ const filterBox = {
 const totalCard = {
   background: "linear-gradient(135deg, #ff5a5f, #ff9966)",
   color: "#fff",
-  padding: "20px",
-  borderRadius: "12px",
-  fontSize: "28px",
+  padding: "25px",
+  borderRadius: "14px",
+  fontSize: "32px",
   fontWeight: "bold",
   margin: "20px 0",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
+  boxShadow: "0 6px 20px rgba(255,90,95,0.3)",
 };
 
 const subText = {
@@ -229,15 +249,15 @@ const grid = {
 
 const card = {
   background: "#fff",
-  padding: "15px",
-  borderRadius: "12px",
+  padding: "18px",
+  borderRadius: "14px",
   boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
 };
 
 const row = {
   display: "flex",
   justifyContent: "space-between",
-  padding: "8px 0",
+  padding: "10px 0",
   borderBottom: "1px solid #eee",
 };
 
@@ -251,8 +271,18 @@ const dailyGrid = {
 const dayBox = {
   background: "#f9fafc",
   padding: "10px",
-  borderRadius: "8px",
+  borderRadius: "10px",
   textAlign: "center",
+  transition: "0.2s",
+};
+
+const dateText = {
+  fontSize: "11px",
+  color: "#777",
+};
+
+const amountText = {
+  fontSize: "14px",
 };
 
 export default Reports;
