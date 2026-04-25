@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, {useState} from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchCategories,
   fetchExpenses,
@@ -16,43 +17,53 @@ import CategoryModal from "../components/CategoryModal";
 
 const Dashboard = () => {
   const [date, setDate] = useState(new Date());
-  const [data, setData] = useState(null);
-  const [categories, setCategories] = useState([]);
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [openSidebar, setOpenSidebar] = useState(false);
   const [openCategoryModal, setOpenCategoryModal] = useState(false);
+
+  const queryClient = useQueryClient();
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["categories"],
+    queryFn: async () => {
+      const res = await fetchCategories();
+      return res.data.data;
+    },
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["expenses", date],
+    queryFn: async () => {
+      const res = await fetchExpenses(formatDate(date));
+      return res.data.data;
+    },
+    staleTime: 1000 * 60 * 2,
+    refetchOnWindowFocus: false,
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ payload, id }) => {
+      if (id) return updateExpense(id, payload);
+      return addExpense(payload);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(["expenses"]);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteExpense,
+    onSuccess: () => {
+      queryClient.invalidateQueries(["expenses"]);
+    },
+  });
 
   const formatDate = (d) => {
     const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
     return local.toISOString().split("T")[0];
   };
-
-  const loadCategories = useCallback(async () => {
-    try {
-      const res = await fetchCategories();
-      setCategories(res.data.data);
-    } catch {
-      console.error("Category fetch failed");
-    }
-  }, []);
-
-  const loadExpenses = useCallback(async () => {
-    try {
-      const res = await fetchExpenses(formatDate(date));
-      setData(res.data.data);
-    } catch {
-      console.error("Expense fetch failed");
-      setData(null);
-    }
-  }, [date]);
-
-  useEffect(() => {
-    loadCategories();
-  }, [loadCategories]);
-
-  useEffect(() => {
-    loadExpenses();
-  }, [loadExpenses]);
 
   const handleSave = async (form) => {
     try {
@@ -63,15 +74,10 @@ const Dashboard = () => {
         description: form.description,
       };
 
-      if (selectedExpense) {
-        await updateExpense(selectedExpense.id, payload);
-      } else {
-        await addExpense(payload);
-      }
-
+      await saveMutation.mutateAsync({ payload, id: selectedExpense?.id });
+      
       setOpenSidebar(false);
       setSelectedExpense(null);
-      loadExpenses();
 
       document.getElementById("expenseTop")?.scrollIntoView({
         behavior: "smooth",
@@ -94,12 +100,13 @@ const Dashboard = () => {
 
   const handleDelete = async (id) => {
     try {
-      await deleteExpense(id);
-      loadExpenses();
+      await deleteMutation.mutateAsync(id);
     } catch {
       alert("Delete failed");
     }
   };
+
+  if (isLoading) return <div>Loading...</div>;
 
   return (
     <div style={app}>
@@ -185,7 +192,7 @@ const Dashboard = () => {
       <CategoryModal
         open={openCategoryModal}
         onClose={() => setOpenCategoryModal(false)}
-        onSuccess={loadCategories}
+        onSuccess={() => queryClient.invalidateQueries(["categories"])}
       />
     </div>
   );

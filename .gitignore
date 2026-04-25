@@ -22,6 +22,7 @@ backend/.env
 backend/target/
 backend/*.log
 backend/*.class
+backend/logs/
 
 # Maven Wrapper (optional keep/remove)
 # backend/.mvn/
