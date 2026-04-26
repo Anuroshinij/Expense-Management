@@ -1,20 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React, {useState, useMemo } from "react";
 import {
   getMonthlyReport,
   getCategoryReport,
 } from "../services/reportApi";
 import Sidebar from "../components/Sidebar";
+import { useQuery } from "@tanstack/react-query";
 
 const Reports = () => {
   const today = new Date();
 
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
-
-  const [daily, setDaily] = useState([]);
-  const [weekly, setWeekly] = useState([]);
-  const [category, setCategory] = useState([]);
-  const [total, setTotal] = useState(0);
 
   // ✅ FIXED DATE FORMAT (NO UTC SHIFT)
   const format = (d) => {
@@ -90,38 +86,49 @@ const Reports = () => {
     return weeks;
   };
 
-  // ✅ LOAD DATA
-  const loadReports = async () => {
-    try {
+  const monthlyQuery = useQuery({
+    queryKey: ["monthly", month, year],
+    queryFn: async () => {
+      const res = await getMonthlyReport(month, year);
+      return res.data.data;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const categoryQuery = useQuery({
+    queryKey: ["category", month, year],
+    queryFn: async () => {
       const { start, end } = getMonthRange();
+      const res = await getCategoryReport(format(start), format(end));
+      return res.data.data;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
 
-      const monthlyRes = await getMonthlyReport(month, year);
-      const raw = monthlyRes.data.data;
-
-      const filled = fillMissingDays(raw);
-      const totalAmount = filled.reduce((acc, d) => acc + d.total, 0);
-      const weeks = generateWeeks(filled);
-
-      let catData = [];
-      try {
-        const catRes = await getCategoryReport(format(start), format(end));
-        catData = catRes.data.data;
-      } catch {
-        catData = [];
-      }
-
-      setDaily(filled);
-      setWeekly(weeks);
-      setCategory(catData);
-      setTotal(totalAmount);
-    } catch (err) {
-      console.error("Error loading reports", err);
+  const processedData = useMemo(() => {
+    if (!monthlyQuery.data) {
+      return { daily: [], weekly: [], total: 0 };
     }
-  };
 
-  useEffect(() => {
-    loadReports();
-  }, [month, year]);
+    const filled = fillMissingDays(monthlyQuery.data);
+
+    return {
+      daily: filled,
+      weekly: generateWeeks(filled),
+      total: filled.reduce((acc, d) => acc + d.total, 0),
+    };
+  }, [monthlyQuery.data, month, year]);
+
+  const { daily, weekly, total } = processedData;
+  const category = categoryQuery.data || [];
+
+  if (monthlyQuery.isLoading || categoryQuery.isLoading) {
+    return <div style={{ padding: 40 }}>Loading...</div>;
+  }
+
+  if (monthlyQuery.isError || categoryQuery.isError) {
+    return <div style={{ padding: 40 }}>Error loading reports</div>;
+  }
 
   return (
     <div style={{ display: "flex", background: "#f4f6fb" }}>
@@ -215,6 +222,7 @@ const header = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
+  marginBottom: "10px", // 🔽 add control
 };
 
 const filterBox = {
@@ -225,15 +233,14 @@ const filterBox = {
 const totalCard = {
   background: "linear-gradient(135deg, #ff5a5f, #ff9966)",
   color: "#fff",
-  padding: "25px",
+  padding: "18px", // 🔽 reduce from 25
   borderRadius: "14px",
-  fontSize: "32px",
+  fontSize: "26px", // 🔽 reduce
   fontWeight: "bold",
-  margin: "20px 0",
+  margin: "15px 0",
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
-  boxShadow: "0 6px 20px rgba(255,90,95,0.3)",
 };
 
 const subText = {
@@ -244,45 +251,48 @@ const subText = {
 const grid = {
   display: "grid",
   gridTemplateColumns: "1fr 1fr",
-  gap: "20px",
+  gap: "15px", // 🔽 reduce from 20
 };
 
 const card = {
   background: "#fff",
-  padding: "18px",
-  borderRadius: "14px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+  padding: "14px", // 🔽 reduce from 18
+  borderRadius: "12px",
+  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
 };
 
 const row = {
   display: "flex",
   justifyContent: "space-between",
-  padding: "10px 0",
+  alignItems: "center",
+  padding: "8px 0",   // 🔽 reduce spacing
   borderBottom: "1px solid #eee",
+  fontSize: "14px",
+  whiteSpace: "nowrap", // 🔥 FIX line break
 };
 
 const dailyGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(70px, 1fr))",
-  gap: "10px",
+  gridTemplateColumns: "repeat(auto-fill, minmax(60px, 1fr))", // 🔽 tighter
+  gap: "8px",
   marginTop: "10px",
 };
 
 const dayBox = {
   background: "#f9fafc",
-  padding: "10px",
-  borderRadius: "10px",
+  padding: "8px", // 🔽 smaller
+  borderRadius: "8px",
   textAlign: "center",
-  transition: "0.2s",
 };
 
 const dateText = {
-  fontSize: "11px",
+  fontSize: "10px", // 🔽 smaller
   color: "#777",
 };
 
 const amountText = {
-  fontSize: "14px",
+  fontSize: "13px",
+  fontWeight: "600",
 };
 
 export default Reports;

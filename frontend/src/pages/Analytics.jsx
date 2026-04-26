@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, {useState, useMemo } from "react";
 import {
   getMonthlyReport,
   getCategoryReport,
 } from "../services/reportApi";
-
+import { useQuery } from "@tanstack/react-query";
 import Sidebar from "../components/Sidebar";
 import {
   BarChart,
@@ -22,10 +22,6 @@ const Analytics = () => {
 
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
-
-  const [daily, setDaily] = useState([]);
-  const [weekly, setWeekly] = useState([]);
-  const [category, setCategory] = useState([]);
 
   // ✅ FIXED DATE FORMAT (NO TIMEZONE BUG)
   const format = (d) => {
@@ -101,29 +97,50 @@ const Analytics = () => {
     return weeks;
   };
 
-  const loadData = async () => {
-    try {
+  const monthlyQuery = useQuery({
+    queryKey: ["monthly-analytics", month, year],
+    queryFn: async () => {
+      const res = await getMonthlyReport(month, year);
+      return res.data.data;
+    },
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+  });
+
+  const categoryQuery = useQuery({
+    queryKey: ["category-analytics", month, year],
+    queryFn: async () => {
       const { start, end } = getMonthRange();
+      const res = await getCategoryReport(format(start), format(end));
+      return res.data.data;
+    },
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+  });
 
-      const monthlyRes = await getMonthlyReport(month, year);
-      const raw = monthlyRes.data.data;
-
-      const filled = fillMissingDays(raw);
-      const weeks = generateWeeks(filled);
-
-      const catRes = await getCategoryReport(format(start), format(end));
-
-      setDaily(filled);
-      setWeekly(weeks);
-      setCategory(catRes.data.data);
-    } catch (err) {
-      console.error("Analytics error", err);
+  const processedData = useMemo(() => {
+    if (!monthlyQuery.data) {
+      return { daily: [], weekly: [] };
     }
-  };
 
-  useEffect(() => {
-    loadData();
-  }, [month, year]);
+    const filled = fillMissingDays(monthlyQuery.data);
+
+    return {
+      daily: filled,
+      weekly: generateWeeks(filled),
+    };
+  }, [monthlyQuery.data, month, year]);
+
+  const { daily, weekly } = processedData;
+  const category = categoryQuery.data || [];
+
+  if (monthlyQuery.isLoading || categoryQuery.isLoading) {
+    return <div style={{ padding: 40 }}>Loading...</div>;
+  }
+
+  if (monthlyQuery.isError || categoryQuery.isError) {
+    return <div style={{ padding: 40 }}>Error loading analytics</div>;
+  }
 
   return (
     <div style={layout}>
