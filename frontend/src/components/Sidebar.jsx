@@ -9,6 +9,7 @@ const Sidebar = () => {
     { name: "Dashboard", icon: "🏠", path: "/dashboard" },
     { name: "Reports", icon: "📊", path: "/reports" },
     { name: "Analytics", icon: "📈", path: "/analytics" },
+    { name: "Finance", icon: "💰", path: "/finance" },
   ];
 
   // ✅ LOGOUT FUNCTION
@@ -34,7 +35,7 @@ const Sidebar = () => {
 
         <div style={styles.menu}>
           {menu.map((item, i) => {
-            const active = location.pathname === item.path;
+            const active = location.pathname.startsWith(item.path);
 
             return (
               <div

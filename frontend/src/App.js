@@ -6,6 +6,7 @@ import DashboardPage from "./pages/Dashboard";
 import Reports from "./pages/Reports";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Analytics from "./pages/Analytics";
+import Finance from "./pages/Finance";
 
 function App() {
   return (
@@ -49,6 +50,15 @@ function App() {
           element={
             <ProtectedRoute>
               <Analytics />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/finance"
+          element={
+            <ProtectedRoute allowedRoles={["USER", "ADMIN"]}>
+              <Finance />
             </ProtectedRoute>
           }
         />
