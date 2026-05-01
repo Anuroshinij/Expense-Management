@@ -1,61 +1,100 @@
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import React from "react";
+import PrimaryButton from "../components/PrimaryButton";
+import "../styles/Home.css";
 
 function Home() {
   const navigate = useNavigate();
 
-  return (
-    <div style={styles.container}>
-      <div style={styles.card}>
-        <h1 style={styles.title}>💰 Expense Tracker</h1>
-        <p style={styles.subtitle}>
-          Manage your expenses smartly and stay in control.
-        </p>
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate]);
 
-        <button
-          style={styles.primaryBtn}
+  return (
+    <div className="home">
+
+      {/* ===== HERO ===== */}
+      <section className="hero">
+        <div className="hero-content">
+          <h1>💰 Expense Tracker</h1>
+          <p>
+            Track, analyze and control your expenses with clarity.
+            Built for simplicity and real insights.
+          </p>
+
+          <div style={{ maxWidth: "220px", margin: "0 auto" }}>
+            <PrimaryButton
+              text="Get Started"
+              onClick={() => navigate("/auth")}
+              ariaLabel="Go to login page"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FEATURES ===== */}
+      <section className="features">
+        <h2>Why choose this app?</h2>
+
+        <div className="feature-grid">
+          <div className="feature-card">
+            <h4>📊 Smart Analytics</h4>
+            <p>Visualize daily, weekly and category spending patterns.</p>
+          </div>
+
+          <div className="feature-card">
+            <h4>📅 Calendar Tracking</h4>
+            <p>Easily log and view expenses by date.</p>
+          </div>
+
+          <div className="feature-card">
+            <h4>📂 Category Insights</h4>
+            <p>Understand where your money goes.</p>
+          </div>
+
+          <div className="feature-card">
+            <h4>⚡ Fast & Simple</h4>
+            <p>No clutter. Just what you need to manage money.</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== STATS ===== */}
+      <section className="stats">
+        <div className="stat">
+          <h3>10K+</h3>
+          <p>Expenses Tracked</p>
+        </div>
+
+        <div className="stat">
+          <h3>1K+</h3>
+          <p>Active Users</p>
+        </div>
+
+        <div className="stat">
+          <h3>99%</h3>
+          <p>Accuracy</p>
+        </div>
+      </section>
+
+      {/* ===== CTA ===== */}
+      <section className="cta">
+        <h2>Start managing your money today</h2>
+      
+      <div style={{ maxWidth: "220px", margin: "0 auto" }}>
+        <PrimaryButton
+          text="Login / Signup"
           onClick={() => navigate("/auth")}
-        >
-          Login / Signup
-        </button>
+          ariaLabel="Go to login page"
+        />
       </div>
+      </section>
+
     </div>
   );
 }
-
-const styles = {
-  container: {
-    height: "100vh",
-    background: "#f5f6fa", // same as dashboard
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  card: {
-    background: "#fff",
-    padding: "40px",
-    borderRadius: "12px",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
-    textAlign: "center",
-    width: "350px",
-  },
-  title: {
-    marginBottom: "10px",
-  },
-  subtitle: {
-    color: "#666",
-    marginBottom: "20px",
-  },
-  primaryBtn: {
-    padding: "12px",
-    width: "100%",
-    background: "#ff5a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "bold",
-  },
-};
 
 export default Home;

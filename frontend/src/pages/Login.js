@@ -1,55 +1,33 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import { validateAuth } from "../utils/validators";
+import toast from "react-hot-toast";
+import "../styles/Login.css";
 
 function Login() {
-  const [isLogin, setIsLogin] = useState(true);
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
 
+  const [isLogin, setIsLogin] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // 🔥 VALIDATORS
-  const isValidEmail = (email) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
 
-  const isStrongPassword = (password) =>
-    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{6,}$/.test(password);
-
-  // 🔥 VALIDATION
-  const validate = (data) => {
-    const newErrors = {};
-
-    if (!data.email) newErrors.email = "Email required";
-    else if (!isValidEmail(data.email))
-      newErrors.email = "Invalid email format";
-
-    if (!data.password) newErrors.password = "Password required";
-
-    if (!isLogin) {
-      if (!data.name) newErrors.name = "Name required";
-
-      if (!isStrongPassword(data.password))
-        newErrors.password =
-          "Password must contain A-Z, a-z, number & special char";
-
-      if (data.password !== data.confirmPassword)
-        newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // 🔥 SUBMIT HANDLER (AUTOFILL FIXED)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // ✅ Reads actual input values (fix autofill issue)
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData.entries());
 
-    if (!validate(data)) return;
+    const validationErrors = validateAuth(data, isLogin);
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
+      toast.error("Fix the highlighted fields");
+      return;
+    }
 
     try {
       setLoading(true);
@@ -57,42 +35,45 @@ function Login() {
       if (isLogin) {
         const res = await API.post("/auth/login", data);
         localStorage.setItem("token", res.data.data.token);
+
+        toast.success("Welcome back 🎉");
         navigate("/dashboard");
       } else {
         await API.post("/auth/register", data);
-        alert("Signup successful");
+
+        toast.success("Account created 🚀");
         setIsLogin(true);
       }
     } catch (err) {
-      setErrors({
-        api: err.response?.data?.message || "Something went wrong",
-      });
+      toast.error(
+        err?.response?.data?.message || "Something went wrong"
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.container}>
-      <form style={styles.card} onSubmit={handleSubmit}>
-        <h2>{isLogin ? "Login" : "Create Account"}</h2>
+    <div className="login-container">
+      <form className="login-card" onSubmit={handleSubmit}>
+        <h2>{isLogin ? "Welcome Back 👋" : "Create Account 🚀"}</h2>
 
-        {errors.api && <p style={styles.error}>{errors.api}</p>}
-
-        {/* SIGNUP ONLY */}
+        {/* NAME */}
         {!isLogin && (
           <>
             <input
               name="name"
-              placeholder="Name"
-              style={styles.input(errors.name)}
+              placeholder="Full Name"
+              className={errors.name ? "input error" : "input"}
+              disabled={loading}
             />
-            {errors.name && <p style={styles.error}>{errors.name}</p>}
+            {errors.name && <p className="error-text">{errors.name}</p>}
 
             <input
               name="adminSecret"
               placeholder="Admin Secret (optional)"
-              style={styles.input()}
+              className="input"
+              disabled={loading}
             />
           </>
         )}
@@ -100,47 +81,83 @@ function Login() {
         {/* EMAIL */}
         <input
           name="email"
+          type="email"
           placeholder="Email"
-          style={styles.input(errors.email)}
+          className={errors.email ? "input error" : "input"}
+          disabled={loading}
         />
-        {errors.email && <p style={styles.error}>{errors.email}</p>}
+        {errors.email && <p className="error-text">{errors.email}</p>}
 
         {/* PASSWORD */}
-        <input
-          name="password"
-          type="password"
-          placeholder="Password"
-          style={styles.input(errors.password)}
-        />
-        {errors.password && <p style={styles.error}>{errors.password}</p>}
+        <div className="input-group">
+          <input
+            name="password"
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            className={errors.password ? "input error" : "input"}
+            disabled={loading}
+          />
+          <button
+            type="button"
+            className="eye-btn"
+            onClick={() => setShowPassword(!showPassword)}
+          >
+            {showPassword ? "Hide" : "Show"}
+          </button>
+        </div>
+        {errors.password && (
+          <p className="error-text">{errors.password}</p>
+        )}
 
         {/* CONFIRM PASSWORD */}
         {!isLogin && (
           <>
-            <input
-              name="confirmPassword"
-              type="password"
-              placeholder="Confirm Password"
-              style={styles.input(errors.confirmPassword)}
-            />
+            <div className="input-group">
+              <input
+                name="confirmPassword"
+                type={showConfirm ? "text" : "password"}
+                placeholder="Confirm Password"
+                className={
+                  errors.confirmPassword ? "input error" : "input"
+                }
+                disabled={loading}
+              />
+              <button
+                type="button"
+                className="eye-btn"
+                onClick={() => setShowConfirm(!showConfirm)}
+              >
+                {showConfirm ? "Hide" : "Show"}
+              </button>
+            </div>
+
             {errors.confirmPassword && (
-              <p style={styles.error}>{errors.confirmPassword}</p>
+              <p className="error-text">
+                {errors.confirmPassword}
+              </p>
             )}
           </>
         )}
 
-        <button type="submit" style={styles.primaryBtn} disabled={loading}>
-          {loading ? "Please wait..." : isLogin ? "Login" : "Signup"}
+        {/* BUTTON */}
+        <button className="login-btn" disabled={loading}>
+          {loading
+            ? "Please wait..."
+            : isLogin
+            ? "Login"
+            : "Signup"}
         </button>
 
-        <p style={styles.switchText}>
-          {isLogin ? "Don't have an account?" : "Already have an account?"}
+        {/* SWITCH */}
+        <p className="switch-text">
+          {isLogin
+            ? "Don't have an account?"
+            : "Already have an account?"}
           <span
             onClick={() => {
               setIsLogin(!isLogin);
               setErrors({});
             }}
-            style={styles.link}
           >
             {isLogin ? " Signup" : " Login"}
           </span>
@@ -149,67 +166,5 @@ function Login() {
     </div>
   );
 }
-
-/* ---------- STYLES ---------- */
-
-const styles = {
-  container: {
-    height: "100vh",
-    background: "#f5f6fa",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  card: {
-    background: "#fff",
-    padding: "30px",
-    borderRadius: "14px",
-    width: "340px",
-    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-    textAlign: "center",
-  },
-
-  input: (error) => ({
-    width: "100%",
-    padding: "11px",
-    margin: "8px 0",
-    borderRadius: "8px",
-    border: error ? "1px solid #f44336" : "1px solid #ddd",
-    outline: "none",
-  }),
-
-  primaryBtn: {
-    width: "100%",
-    padding: "11px",
-    background: "#ff5a5f",
-    color: "#fff",
-    border: "none",
-    borderRadius: "8px",
-    cursor: "pointer",
-    fontWeight: "bold",
-    marginTop: "10px",
-  },
-
-  link: {
-    color: "#ff5a5f",
-    cursor: "pointer",
-    marginLeft: "5px",
-    fontWeight: "bold",
-  },
-
-  switchText: {
-    marginTop: "12px",
-    fontSize: "14px",
-    color: "#666",
-  },
-
-  error: {
-    color: "#f44336",
-    fontSize: "12px",
-    textAlign: "left",
-    marginTop: "-5px",
-  },
-};
 
 export default Login;
