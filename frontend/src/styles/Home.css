@@ -1,0 +1,148 @@
+/* ===== ROOT ===== */
+.home {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* ❌ no scrolling */
+  background: #f4f6fb;
+  font-family: "Inter", sans-serif;
+}
+
+/* ===== HERO ===== */
+.hero {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* 🔥 same dashboard gradient feel */
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: #fff;
+
+  padding: 30px;
+}
+
+.hero-content {
+  text-align: center;
+  max-width: 600px;
+}
+
+.hero-content h1 {
+  font-size: 34px;
+  margin-bottom: 12px;
+}
+
+.hero-content p {
+  font-size: 14px;
+  color: #cbd5f5;
+  margin-bottom: 20px;
+}
+
+/* ===== FEATURES ===== */
+.features {
+  flex: 1;
+  padding: 20px 30px;
+  background: #f4f6fb;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.features h2 {
+  text-align: center;
+  margin-bottom: 15px;
+  font-size: 18px;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.feature-card {
+  background: #fff;
+  padding: 14px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+
+  transition: all 0.2s ease;
+}
+
+.feature-card:hover {
+  transform: translateY(-3px);
+}
+
+.feature-card h4 {
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.feature-card p {
+  font-size: 12px;
+  color: #666;
+}
+
+/* ===== STATS ===== */
+.stats {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+
+  background: linear-gradient(135deg, #ff5a5f, #ff9966);
+  color: #fff;
+
+  padding: 12px;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.stat p {
+  font-size: 12px;
+}
+
+/* ===== CTA ===== */
+.cta {
+  padding: 15px;
+  text-align: center;
+  background: #fff;
+}
+
+.cta h2 {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .home {
+    overflow-y: auto; /* allow scroll on mobile */
+  }
+
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .hero-content h1 {
+    font-size: 26px;
+  }
+}
+
+@media (max-width: 500px) {
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats {
+    flex-direction: column;
+    gap: 10px;
+  }
+}

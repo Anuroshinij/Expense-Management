@@ -1,5 +1,9 @@
 import {BrowserRouter, Routes, Route} from "react-router-dom";
 import './App.css';
+
+import { Toaster } from "react-hot-toast";
+import "./styles/toast.css";
+
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import DashboardPage from "./pages/Dashboard";
@@ -11,6 +15,21 @@ import Finance from "./pages/Finance";
 function App() {
   return (
     <BrowserRouter>
+
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3000,
+          className: "toast-default",
+          success: {
+            className: "toast-success",
+          },
+          error: {
+            className: "toast-error",
+          },
+        }}
+      />
+
       <Routes>
         <Route path = "/" element = {<Home /> } />
         {/* Public */}
