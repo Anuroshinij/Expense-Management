@@ -48,35 +48,35 @@ It helps users manage daily expenses, analyze spending, and track monthly saving
 
 ### Auth
 
-POST /api/auth/register
-POST /api/auth/login
+- POST /api/auth/register
+- POST /api/auth/login
 
 
 ### Expenses
 
-GET /api/expenses?date=
-POST /api/expenses
-PUT /api/expenses/{id}
-DELETE /api/expenses/{id}
+- GET /api/expenses?date=
+- POST /api/expenses
+- PUT /api/expenses/{id}
+- DELETE /api/expenses/{id}
 
 
 ### Categories
 
-GET /api/categories
-POST /api/categories
+- GET /api/categories
+- POST /api/categories
 
 
 ### Reports
 
-GET /api/reports/weekly
-GET /api/reports/monthly
-GET /api/reports/category
+- GET /api/reports/weekly
+- GET /api/reports/monthly
+- GET /api/reports/category
 
 
 ### Salary
 
-POST /api/salary
-GET /api/salary
+- POST /api/salary
+- GET /api/salary
 
 
 ---
@@ -91,18 +91,6 @@ Controller → Service → Repository
 **Frontend**
 
 Pages → Components → API Layer
-
-
----
-
-## 📁 Frontend Structure
-
-
-src/
-├── pages/
-├── components/
-├── services/
-├── utils/
 
 
 ---
@@ -122,6 +110,8 @@ src/
 ### Backend
 ```bash
 mvn spring-boot:run
-Frontend
+
+### Frontend
+```bash
 npm install
 npm start
