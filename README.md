@@ -107,11 +107,15 @@ Pages → Components → API Layer
 
 ## 📦 Setup
 
-### Backend
+### 🔹 Backend
 ```bash
+cd backend
 mvn spring-boot:run
+```
 
-### Frontend
+### 🔹 Frontend
 ```bash
+cd frontend
 npm install
 npm start
+```
