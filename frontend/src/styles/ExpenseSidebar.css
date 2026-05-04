@@ -1,0 +1,67 @@
+.exp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.3);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 1000;
+}
+
+.exp-sidebar {
+  width: 100%;
+  max-width: 360px;
+  height: 100%;
+  background: #fff;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.exp-close {
+  cursor: pointer;
+  font-size: 18px;
+}
+
+label {
+  font-size: 13px;
+  color: #555;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+
+.exp-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.exp-buttons .primary-btn {
+  flex: 1;
+}
+
+.secondary {
+  flex: 1;
+  background: transparent;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.error {
+  color: red;
+  font-size: 12px;
+}

@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchCategories,
@@ -15,175 +15,203 @@ import ExpenseSidebar from "../components/ExpenseSidebar";
 import CategoryChips from "../components/CategoryChips";
 import CategoryModal from "../components/CategoryModal";
 
+import "../styles/Dashboard.css";
+
+/* ---------- DATE FORMAT ---------- */
+const formatDate = (d) => {
+  const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+  return local.toISOString().split("T")[0];
+};
+
 const Dashboard = () => {
   const [date, setDate] = useState(new Date());
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [openSidebar, setOpenSidebar] = useState(false);
   const [openCategoryModal, setOpenCategoryModal] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
 
+  const topRef = useRef();
   const queryClient = useQueryClient();
 
+  /* ✅ FIX 1: USE STRING DATE */
+  const formattedDate = formatDate(date);
+
+  /* ---------- CATEGORIES ---------- */
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
-    queryFn: async () => {
-      const res = await fetchCategories();
-      return res.data.data;
-    },
-    staleTime: 1000 * 60 * 2,
-    refetchOnWindowFocus: false,
+    queryFn: async () => (await fetchCategories()).data.data,
+    staleTime: 1000 * 60 * 5,
   });
 
-  const { data, isLoading } = useQuery({
-    queryKey: ["expenses", date],
-    queryFn: async () => {
-      const res = await fetchExpenses(formatDate(date));
-      return res.data.data;
-    },
-    staleTime: 1000 * 60 * 2,
-    refetchOnWindowFocus: false,
+  /* ---------- EXPENSES ---------- */
+  const { data, isFetching } = useQuery({
+    queryKey: ["expenses", formattedDate],
+    queryFn: async () =>
+      (await fetchExpenses(formattedDate)).data.data,
+    staleTime: 1000 * 60 * 5,
+    keepPreviousData: true,
   });
 
+  /* ---------- MUTATIONS ---------- */
   const saveMutation = useMutation({
-    mutationFn: async ({ payload, id }) => {
-      if (id) return updateExpense(id, payload);
-      return addExpense(payload);
-    },
+    mutationFn: ({ payload, id }) =>
+      id ? updateExpense(id, payload) : addExpense(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries(["expenses"]);
+      /* ✅ FIX 2: ONLY CURRENT DATE INVALIDATE */
+      queryClient.invalidateQueries({
+        queryKey: ["expenses", formattedDate],
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteExpense,
     onSuccess: () => {
-      queryClient.invalidateQueries(["expenses"]);
+      queryClient.invalidateQueries({
+        queryKey: ["expenses", formattedDate],
+      });
     },
   });
 
-  const formatDate = (d) => {
-    const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-    return local.toISOString().split("T")[0];
+  /* ---------- MEMO ---------- */
+  const expenseList = useMemo(() => {
+    if (!data?.categories) return [];
+    return Object.entries(data.categories)
+      .reverse()
+      .map(([category, items]) => ({
+        category,
+        items: [...items].reverse(),
+      }));
+  }, [data]);
+
+  /* ---------- HANDLERS ---------- */
+  const handleSave = async (form) => {
+    const payload = {
+      date: formattedDate,
+      categoryId: Number(form.categoryId),
+      amount: Number(form.amount),
+      description: form.description,
+    };
+
+    await saveMutation.mutateAsync({
+      payload,
+      id: selectedExpense?.id,
+    });
+
+    setOpenSidebar(false);
+    setSelectedExpense(null);
+    topRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const handleSave = async (form) => {
-    try {
-      const payload = {
-        date: formatDate(date),
-        categoryId: Number(form.categoryId),
-        amount: Number(form.amount),
-        description: form.description,
-      };
-
-      await saveMutation.mutateAsync({ payload, id: selectedExpense?.id });
-      
-      setOpenSidebar(false);
-      setSelectedExpense(null);
-
-      document.getElementById("expenseTop")?.scrollIntoView({
-        behavior: "smooth",
-      });
-    } catch (err) {
-      alert(err.response?.data?.message || "Save failed");
-    }
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this expense?")) return;
+    await deleteMutation.mutateAsync(id);
   };
 
   const handleEdit = (item, categoryName) => {
-    const cat = categories.find((c) => c.name === categoryName);
+  // find category id from name
+  const cat = categories.find((c) => c.name === categoryName);
 
-    setSelectedExpense({
+  // set selected expense (prefill form)
+  setSelectedExpense({
       ...item,
       categoryId: cat?.id,
     });
 
+    // open sidebar
     setOpenSidebar(true);
   };
 
-  const handleDelete = async (id) => {
-    try {
-      await deleteMutation.mutateAsync(id);
-    } catch {
-      alert("Delete failed");
-    }
-  };
-
-  if (isLoading) return <div>Loading...</div>;
-
   return (
-    <div style={app}>
-      <Sidebar />
+    <div className="app">
+      
+      {/* MOBILE MENU BUTTON */}
+      <button className="menu-btn" onClick={() => setShowSidebar(true)}>
+        ☰
+      </button>
 
-      <div style={main}>
-        {/* HEADER */}
-        <div style={header}>
-          <h2 style={{ margin: 0 }}>📅 Dashboard</h2>
-          <span style={dateText}>{date.toDateString()}</span>
+      {/* SIDEBAR */}
+      <Sidebar show={showSidebar} setShow={setShowSidebar} />
+
+      {/* OVERLAY */}
+      {showSidebar && (
+        <div className="overlay" onClick={() => setShowSidebar(false)} />
+      )}
+
+      {/* MAIN */}
+      <div className="main">
+        
+        <div className="header">
+          <h2>📅 Dashboard</h2>
+          <span>{date.toDateString()}</span>
         </div>
 
-        {/* GRID */}
-        <div style={grid}>
+        <div className="grid">
+          
           {/* LEFT */}
-          <div style={leftCol}>
-            <div style={card}>
-              <h4 style={title}>📆 Select Date</h4>
+          <div className="left">
+            <div className="card">
+              <h4>📆 Select Date</h4>
               <CalendarView date={date} setDate={setDate} />
             </div>
 
-            <div style={totalCard}>
+            <div className="total-card">
               <span>💰 Daily Spend</span>
               <strong>₹{data?.total || 0}</strong>
             </div>
 
-            <div style={card}>
-              <div style={rowBetween}>
-                <h4 style={title}>📂 Categories</h4>
-                <button
-                  style={categoryBtn}
-                  onClick={() => setOpenCategoryModal(true)}
-                >
+            <div className="card">
+              <div className="row-between">
+                <h4>📂 Categories</h4>
+                <button onClick={() => setOpenCategoryModal(true)}>
                   + Add
                 </button>
               </div>
-
               <CategoryChips categories={categories} />
             </div>
           </div>
 
           {/* RIGHT */}
-          <div style={rightCol} id="expenseTop">
-            <div style={cardFull}>
-              <h4 style={title}>💳 Expenses</h4>
+          <div className="right" ref={topRef}>
+            <div className="card full">
+              <h4>💳 Expenses</h4>
 
-              <div style={expenseScroll}>
-                {!data?.categories ||
-                Object.keys(data.categories).length === 0 ? (
-                  <div style={emptyState}>No expenses 😴</div>
+              <div className="scroll">
+                
+                {/* ✅ FIX 3: PARTIAL LOADING */}
+                {isFetching ? (
+                  <div className="skeleton">Loading...</div>
+                ) : expenseList.length === 0 ? (
+                  <div className="empty">No expenses 😴</div>
                 ) : (
-                  Object.entries(data.categories)
-                    .reverse()
-                    .map(([category, items]) => (
-                      <ExpenseCard
-                        key={category}
-                        category={category}
-                        items={[...items].reverse()}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                      />
-                    ))
+                  expenseList.map((item) => (
+                    <ExpenseCard
+                      key={item.category}
+                      category={item.category}
+                      items={item.items}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                    />
+                  ))
                 )}
               </div>
+
             </div>
           </div>
         </div>
 
         {/* FAB */}
-        <button style={fabBtn} onClick={() => setOpenSidebar(true)}>
+        <button className="fab" onClick={() => {
+            setSelectedExpense(null); // 🔥 ensure fresh form
+            setOpenSidebar(true);
+          }}>
           +
         </button>
       </div>
 
       <ExpenseSidebar
         open={openSidebar}
-        onClose={() => setOpenSidebar(false)}
+        onClose={() => {setOpenSidebar(false); setSelectedExpense(null);}}
         onSave={handleSave}
         selectedExpense={selectedExpense}
         categories={categories}
@@ -192,133 +220,12 @@ const Dashboard = () => {
       <CategoryModal
         open={openCategoryModal}
         onClose={() => setOpenCategoryModal(false)}
-        onSuccess={() => queryClient.invalidateQueries(["categories"])}
+        onSuccess={() =>
+          queryClient.invalidateQueries({ queryKey: ["categories"] })
+        }
       />
     </div>
   );
 };
 
 export default Dashboard;
-
-/* ---------- STYLES ---------- */
-
-const app = {
-  display: "flex",
-  height: "100vh", // 🔥 fixed full height
-  overflow: "hidden",
-  background: "#f4f6fb",
-};
-
-const main = {
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-  padding: "15px",
-  gap: "10px",
-};
-
-const header = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingBottom: "5px",
-};
-
-const dateText = {
-  fontSize: "13px",
-  color: "#666",
-};
-
-const grid = {
-  display: "grid",
-  gridTemplateColumns: "1.2fr 1fr",
-  gap: "12px",
-  flex: 1,
-  overflow: "hidden",
-};
-
-const leftCol = {
-  display: "flex",
-  flexDirection: "column",
-  gap: "12px",
-};
-
-const rightCol = {
-  display: "flex",
-  flexDirection: "column",
-};
-
-const card = {
-  background: "#fff",
-  padding: "12px",
-  borderRadius: "12px",
-  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-};
-
-const cardFull = {
-  ...card,
-  flex: 1,
-  display: "flex",
-  flexDirection: "column",
-};
-
-const expenseScroll = {
-  overflowY: "auto",
-  marginTop: "8px",
-  paddingRight: "5px",
-};
-
-const totalCard = {
-  background: "linear-gradient(135deg,#ff5a5f,#ff9966)",
-  color: "#fff",
-  padding: "14px",
-  borderRadius: "12px",
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  fontSize: "14px",
-};
-
-const rowBetween = {
-  display: "flex",
-  justifyContent: "space-between",
-  alignItems: "center",
-  marginBottom: "6px",
-};
-
-const title = {
-  margin: 0,
-  fontSize: "15px",
-};
-
-const categoryBtn = {
-  padding: "4px 10px",
-  fontSize: "12px",
-  background: "#4caf50",
-  color: "#fff",
-  border: "none",
-  borderRadius: "6px",
-  cursor: "pointer",
-};
-
-const emptyState = {
-  textAlign: "center",
-  padding: "15px",
-  fontSize: "13px",
-  color: "#999",
-};
-
-const fabBtn = {
-  position: "fixed",
-  bottom: "20px",
-  right: "25px",
-  width: "55px",
-  height: "55px",
-  borderRadius: "50%",
-  background: "linear-gradient(135deg,#ff5a5f,#ff9966)",
-  color: "#fff",
-  fontSize: "26px",
-  border: "none",
-  cursor: "pointer",
-  boxShadow: "0 4px 15px rgba(0,0,0,0.2)",
-};
