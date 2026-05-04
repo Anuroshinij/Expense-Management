@@ -1,0 +1,143 @@
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 240px;
+  height: 100vh;
+
+  background: linear-gradient(180deg, #0f172a, #020617);
+  color: white;
+
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  z-index: 1000;
+}
+
+/* Open / Close */
+.sidebar.open {
+  width: 240px;
+}
+
+.sidebar.closed {
+  width: 70px;
+}
+
+/* Top Section */
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Toggle Button */
+.toggle {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Menu */
+.menu {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Menu Item */
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #cbd5f5;
+  transition: all 0.2s ease;
+}
+
+/* Hover Effect */
+.menu-item:hover {
+  background: #1e293b;
+  color: white;
+}
+
+/* Active */
+.menu-item.active {
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  color: white;
+  font-weight: 500;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+/* Icon */
+.icon {
+  font-size: 16px;
+}
+
+/* Bottom */
+.bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+}
+
+/* Logout */
+.logout {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #ef4444;
+  color: white;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.logout:hover {
+  background: #dc2626;
+}
+
+/* Mobile close button */
+.close-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  .sidebar.open {
+    width: 200px;
+  }
+
+  .sidebar.closed {
+    width: 60px;
+  }
+}
+
+/* Mobile behavior */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.show {
+    transform: translateX(0);
+  }
+}
